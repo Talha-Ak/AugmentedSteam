@@ -68,7 +68,7 @@ const DEFAULTS = {
     "storeCountry": null,
     "expand_slider": false,
     "es_guide_tags": {}, // TODO remove prefix
-    "market_stats": {"startListing": null, "purchaseTotal": 0, "saleTotal": 0},
+    "market_stats": {"startListing": null, "purchaseTotal": null, "saleTotal": null},
     "popular_refresh": false,
     "workshop_state": "",
     "playback_hd": false,
