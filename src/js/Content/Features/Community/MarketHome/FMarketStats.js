@@ -1,5 +1,5 @@
 import {HTML, LocalStorage, Localization, SyncedStorage, TimeUtils} from "../../../../modulesCore";
-import {Feature, Price, RequestData, User} from "../../../modulesContent";
+import {CurrencyManager, Feature, Price, RequestData, User} from "../../../modulesContent";
 
 export default class FMarketStats extends Feature {
 
@@ -57,9 +57,9 @@ export default class FMarketStats extends Feature {
         let stop = false;
 
         // If startListing is missing, reset cached data to avoid inaccurate results.
-        if (startListing === null && (purchaseTotal > 0 || saleTotal > 0)) { // TODO when is startListing `null`?
-            purchaseTotal = 0;
-            saleTotal = 0;
+        if (startListing === null && (purchaseTotal !== null || saleTotal !== null)) { // TODO when is startListing `null`?
+            purchaseTotal = {};
+            saleTotal = {};
         }
 
         function updatePrices(dom, start) {
@@ -99,37 +99,50 @@ export default class FMarketStats extends Feature {
                 const priceNode = node.querySelector(".market_listing_price");
                 if (!priceNode) { continue; }
 
-                const price = Price.parseFromString(priceNode.textContent);
+                // TODO: CNY and JPY share the same symbol, so will return CNY for both.
+                // Only is an issue where account changes from one to the other.
+                const symbol = CurrencyManager.getCurrencySymbolFromString(priceNode.textContent);
+                const price = Price.parseFromString(priceNode.textContent, CurrencyManager.fromSymbol(symbol).abbr);
 
                 if (isPurchase) {
-                    purchaseTotal += price.value;
+                    purchaseTotal[price.currency] = (purchaseTotal[price.currency] || 0) + price.value;
                 } else {
-                    saleTotal += price.value;
+                    saleTotal[price.currency] = (saleTotal[price.currency] || 0) + price.value;
                 }
             }
 
-            const net = new Price(saleTotal - purchaseTotal);
-            let color = "green";
-            let netText = Localization.str.net_gain;
-            if (net.value < 0) {
-                color = "red";
-                netText = Localization.str.net_spent;
-            }
+            const net = {};
+            const allCurrencies = new Set([...Object.keys(saleTotal), ...Object.keys(purchaseTotal)]);
+            allCurrencies.forEach((currency) => {
+                net[currency] = (saleTotal[currency] || 0) - (purchaseTotal[currency] || 0);
+            });
 
-            const purchaseTotalPrice = new Price(purchaseTotal);
-            const saleTotalPrice = new Price(saleTotal);
+            let netText = Localization.str.net_gain;
+
             HTML.inner("#es_market_summary",
                 `<div>
                     ${Localization.str.purchase_total}
-                    <span class="es_market_summary_item">${purchaseTotalPrice}</span>
+                    ${Object.entries(purchaseTotal).map(([currency, value]) => (
+                        `<span class="es_market_summary_item">
+                            ${new Price(value, currency)}
+                        </span>`
+                    )).join("\n")}
                 </div>
                 <div>
                     ${Localization.str.sales_total}
-                    <span class="es_market_summary_item">${saleTotalPrice}</span>
+                    ${Object.entries(saleTotal).map(([currency, value]) => (
+                        `<span class="es_market_summary_item">
+                            ${new Price(value, currency)}
+                        </span>`
+                    )).join("\n")}
                 </div>
                 <div>
                     ${netText}
-                    <span class="es_market_summary_item" style="color: ${color};">${net}</span>
+                    ${Object.entries(net).map(([currency, value]) => (
+                        `<span class="es_market_summary_item" style="color: ${value < 0 ? "red" : "green"};">
+                            ${new Price(value, currency)}
+                        </span>`
+                    )).join("\n")}
                 </div>`);
         }
 
