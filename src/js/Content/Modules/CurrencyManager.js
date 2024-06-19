@@ -183,6 +183,17 @@ class CurrencyManager {
         return CurrencyManager._indices.id[number] || CurrencyManager._defaultCurrency;
     }
 
+    /**
+    * NOTE: CNY and JPY share the same symbol, so will return CNY for both.
+    * @return SteamCurrency
+    */
+    static fromSymbol(symbol) {
+        if (symbol === "¥") {
+            return CurrencyManager._indices.id[23];
+        }
+        return CurrencyManager._indices.symbols[symbol] || CurrencyManager._defaultCurrency;
+    }
+
     static _getCurrencyFromDom() {
         const currencyNode = document.querySelector("meta[itemprop=priceCurrency][content]");
         if (currencyNode) {
