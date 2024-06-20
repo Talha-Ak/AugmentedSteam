@@ -184,13 +184,20 @@ class CurrencyManager {
     }
 
     /**
-    * NOTE: CNY and JPY share the same symbol, so will return CNY for both.
+    * Will default to CNY if symbol is "¥" and cannot be resolved using default currency.
     * @return SteamCurrency
     */
     static fromSymbol(symbol) {
-        if (symbol === "¥") {
-            return CurrencyManager._indices.id[23];
+        if (symbol === "¥") {   // CNY & JPY use the same symbol
+            // Could use customCurrency? In settings it is under "Price History Info"
+            const currency = CurrencyManager.fromType(CurrencyManager.storeCurrency);
+            if (currency.symbol === "¥") {
+                return currency;
+            } else {
+                return CurrencyManager._indices.id[23]; // CNY
+            }
         }
+
         return CurrencyManager._indices.symbols[symbol] || CurrencyManager._defaultCurrency;
     }
 

@@ -99,9 +99,10 @@ export default class FMarketStats extends Feature {
                 const priceNode = node.querySelector(".market_listing_price");
                 if (!priceNode) { continue; }
 
-                // TODO: CNY and JPY share the same symbol, so will return CNY for both.
-                // Only is an issue where account changes from one to the other.
                 const symbol = CurrencyManager.getCurrencySymbolFromString(priceNode.textContent);
+
+                // TODO: CNY and JPY share the same symbol, will default to CNY if it can't be determined.
+                // This is only an issue where an account does transactions using both currencies.
                 const price = Price.parseFromString(priceNode.textContent, CurrencyManager.fromSymbol(symbol).abbr);
 
                 if (isPurchase) {
